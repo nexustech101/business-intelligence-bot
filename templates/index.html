@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Company Profiling Bots Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <header class="header">
+        <h1>🤖 Company Profiling Bots</h1>
+        <p>Extract and analyze company data using AI-powered bots</p>
+      </header>
+
+      <!-- Bot Controls -->
+      <div class="bot-section">
+        <!-- Bot 1: Website Crawler -->
+        <div class="bot-card">
+          <h2>🌐 Bot 1: Website Crawler</h2>
+          <p>Crawl company websites and extract structured data</p>
+
+          <form id="crawlerForm" class="bot-form">
+            <div class="form-group">
+              <label for="crawlUrl">Company Website URL</label>
+              <input
+                type="url"
+                id="crawlUrl"
+                placeholder="https://example.com"
+                required />
+            </div>
+
+            <div class="form-group">
+              <label for="maxPages">Max Pages to Crawl</label>
+              <input type="number" id="maxPages" value="20" min="1" max="100" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+              Start Crawling
+            </button>
+          </form>
+
+          <div id="crawlerStatus" class="status-message"></div>
+        </div>
+
+        <!-- Bot 2: Company Info Aggregator -->
+        <div class="bot-card">
+          <h2>📊 Bot 2: Company Info Aggregator</h2>
+          <p>Aggregate company data from multiple sources</p>
+
+          <form id="aggregatorForm" class="bot-form">
+            <div class="form-group">
+              <label for="companyName">Company Name</label>
+              <input
+                type="text"
+                id="companyName"
+                placeholder="Tesla"
+                required />
+            </div>
+
+            <div class="form-group">
+              <label for="customUrls"
+                >Custom URLs (optional, one per line)</label
+              >
+              <textarea
+                id="customUrls"
+                rows="4"
+                placeholder="https://example.com&#10;https://finance.yahoo.com/quote/TSLA"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+              Aggregate Data
+            </button>
+          </form>
+
+          <div id="aggregatorStatus" class="status-message"></div>
+        </div>
+      </div>
+
+      <!-- Saved Data Files -->
+      <div class="data-section">
+        <h2>📁 Saved Data Files</h2>
+        <div id="dataFiles" class="data-files">
+          {% if data_files %}
+          <ul class="file-list">
+            {% for file in data_files %}
+            <li>
+              <a href="/results?file={{ file }}" class="file-link">
+                {{ file }}
+              </a>
+              <button
+                onclick="deleteFile('{{ file }}')"
+                class="btn btn-secondary">
+                Delete
+              </button>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="no-data">No data files yet. Run a bot to generate data!</p>
+          {% endif %}
+        </div>
+
+        <button id="refreshFiles" class="btn btn-secondary">
+          Refresh File List
+        </button>
+      </div>
+    </div>
+
+    <script>
+      // Crawler Form Handler
+      document
+        .getElementById("crawlerForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const url = document.getElementById("crawlUrl").value;
+          const maxPages = parseInt(document.getElementById("maxPages").value);
+          const statusDiv = document.getElementById("crawlerStatus");
+
+          statusDiv.innerHTML =
+            '<div class="loading">🔄 Crawling website...</div>';
+
+          try {
+            const response = await fetch("/crawl", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ url, max_pages: maxPages }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+              statusDiv.innerHTML = `
+                        <div class="success">
+                            ✅ ${data.message}
+                            <br>
+                            <a href="/results?file=website_${
+                              url
+                                .replace(/https?:\/\//, "")
+                                .replace(/\./g, "_")
+                                .split("/")[0]
+                            }.json">
+                                View Results
+                            </a>
+                        </div>
+                    `;
+              refreshFileList();
+            } else {
+              statusDiv.innerHTML = `<div class="error">❌ Error: ${data.error}</div>`;
+            }
+          } catch (error) {
+            statusDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+          }
+        });
+
+      // Aggregator Form Handler
+      document
+        .getElementById("aggregatorForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const companyName = document.getElementById("companyName").value;
+          const urlsText = document.getElementById("customUrls").value;
+          const urls = urlsText
+            ? urlsText.split("\n").filter((u) => u.trim())
+            : [];
+          const statusDiv = document.getElementById("aggregatorStatus");
+
+          statusDiv.innerHTML =
+            '<div class="loading">🔄 Aggregating company data...</div>';
+
+          try {
+            const response = await fetch("/aggregate", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ company_name: companyName, urls }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+              statusDiv.innerHTML = `
+                        <div class="success">
+                            ✅ ${data.message}
+                            <br>
+                            <a href="/results?file=profile_${companyName
+                              .toLowerCase()
+                              .replace(/\s+/g, "_")}.json">
+                                View Results
+                            </a>
+                        </div>
+                    `;
+              refreshFileList();
+            } else {
+              statusDiv.innerHTML = `<div class="error">❌ Error: ${data.error}</div>`;
+            }
+          } catch (error) {
+            statusDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+          }
+        });
+
+      // Refresh File List
+      async function refreshFileList() {
+        try {
+          const response = await fetch("/data/list");
+          const data = await response.json();
+
+          const dataFilesDiv = document.getElementById("dataFiles");
+
+          if (data.files && data.files.length > 0) {
+            const fileList = data.files
+              .map(
+                (file) => `
+                        <li>
+                            <a href="/results?file=${
+                              file.filename
+                            }" class="file-link">
+                                ${file.filename}
+                            </a>
+                            <span class="file-meta">
+                                ${(file.size / 1024).toFixed(2)} KB
+                            </span>
+                        </li>
+                    `
+              )
+              .join("");
+
+            dataFilesDiv.innerHTML = `<ul class="file-list">${fileList}</ul>`;
+          } else {
+            dataFilesDiv.innerHTML =
+              '<p class="no-data">No data files yet.</p>';
+          }
+        } catch (error) {
+          console.error("Error refreshing file list:", error);
+        }
+      }
+
+      async function deleteFile(filename) {
+        try {
+          // Encode the filename for the URL
+          const response = await fetch(
+            `/data/${encodeURIComponent(filename)}`,
+            { method: "POST" }
+          );
+          const data = await response.json();
+
+          if (!data.success) {
+            alert("Error deleting file: " + data.error);
+            return;
+          }
+
+          alert(data.message);
+
+          // Refresh the file list from the server
+          const listResponse = await fetch("/data/list");
+          const listData = await listResponse.json();
+
+          const dataFilesDiv = document.getElementById("dataFiles");
+
+          if (listData.files && listData.files.length > 0) {
+            const fileList = listData.files
+              .map(
+                (file) => `
+                <li>
+                    <a href="/results?file=${encodeURIComponent(
+                      file.filename
+                    )}" class="file-link">
+                        ${file.filename}
+                    </a>
+                    <span class="file-meta">
+                        ${(file.size / 1024).toFixed(2)} KB
+                    </span>
+                    <button onclick="deleteFile('${
+                      file.filename
+                    }')" class="btn btn-secondary">Delete</button>
+                </li>
+            `
+              )
+              .join("");
+
+            dataFilesDiv.innerHTML = `<ul class="file-list">${fileList}</ul>`;
+          } else {
+            dataFilesDiv.innerHTML =
+              '<p class="no-data">No data files yet.</p>';
+          }
+        } catch (error) {
+          console.error("Error deleting or refreshing file list:", error);
+        }
+      }
+
+      document
+        .getElementById("refreshFiles")
+        .addEventListener("click", refreshFileList);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,7 @@
+docling
+docling-core
+Flask
+requests
+beautifulsoup4
+urllib3
+lxml

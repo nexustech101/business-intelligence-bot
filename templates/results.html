@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results - {{ filename }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📊 Extraction Results</h1>
+            <p>{{ filename }}</p>
+            <a href="/" class="btn btn-secondary">← Back to Dashboard</a>
+        </header>
+
+        <div class="results-container">
+            {% if data._metadata %}
+            <div class="metadata-card">
+                <h3>📅 Metadata</h3>
+                <table class="data-table">
+                    <tr>
+                        <th>Timestamp</th>
+                        <td>{{ data._metadata.timestamp }}</td>
+                    </tr>
+                    <tr>
+                        <th>Version</th>
+                        <td>{{ data._metadata.version }}</td>
+                    </tr>
+                </table>
+            </div>
+            {% endif %}
+
+            <!-- Website Crawler Results -->
+            {% if data.base_url %}
+            <div class="result-section">
+                <h2>🌐 Website Crawl Results</h2>
+                
+                <div class="info-card">
+                    <h3>Basic Info</h3>
+                    <table class="data-table">
+                        <tr>
+                            <th>Base URL</th>
+                            <td><a href="{{ data.base_url }}" target="_blank">{{ data.base_url }}</a></td>
+                        </tr>
+                        <tr>
+                            <th>Domain</th>
+                            <td>{{ data.domain }}</td>
+                        </tr>
+                        <tr>
+                            <th>Pages Crawled</th>
+                            <td>{{ data.pages|length }}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                {% if data.contacts %}
+                <div class="info-card">
+                    <h3>📧 Contact Information</h3>
+                    <table class="data-table">
+                        {% for key, values in data.contacts.items() %}
+                        <tr>
+                            <th>{{ key.title() }}</th>
+                            <td>
+                                {% if values is iterable and values is not string %}
+                                    <ul class="compact-list">
+                                    {% for value in values[:5] %}
+                                        <li>{{ value }}</li>
+                                    {% endfor %}
+                                    {% if values|length > 5 %}
+                                        <li><em>... and {{ values|length - 5 }} more</em></li>
+                                    {% endif %}
+                                    </ul>
+                                {% else %}
+                                    {{ values }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                {% endif %}
+
+                {% if data.business_terms %}
+                <div class="info-card">
+                    <h3>💼 Business Terms</h3>
+                    <div class="tag-container">
+                        {% for term in data.business_terms %}
+                        <span class="tag">{{ term }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if data.pages %}
+                <div class="info-card">
+                    <h3>📄 Crawled Pages ({{ data.pages|length }})</h3>
+                    <div class="pages-list">
+                        {% for page in data.pages %}
+                        <div class="page-item">
+                            <h4>
+                                <a href="{{ page.url }}" target="_blank">{{ page.title or page.url }}</a>
+                            </h4>
+                            {% if page.description %}
+                            <p class="page-description">{{ page.description }}</p>
+                            {% endif %}
+                            <p class="page-preview">{{ page.text_preview[:200] }}...</p>
+                            <div class="page-meta">
+                                <span>📝 {{ page.text_length }} characters</span>
+                                {% if page.business_terms %}
+                                <span>🏷️ {{ page.business_terms|length }} terms</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Company Aggregator Results -->
+            {% if data.company_name %}
+            <div class="result-section">
+                <h2>📊 Company Profile: {{ data.company_name }}</h2>
+
+                {% if data.profile %}
+                <div class="info-card">
+                    <h3>Company Overview</h3>
+                    <table class="data-table">
+                        {% for key, value in data.profile.items() %}
+                        <tr>
+                            <th>{{ key.replace('_', ' ').title() }}</th>
+                            <td>{{ value }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                {% endif %}
+
+                {% if data.sources %}
+                <div class="info-card">
+                    <h3>📚 Data Sources ({{ data.sources|length }})</h3>
+                    
+                    {% for source_name, source_data in data.sources.items() %}
+                    <div class="source-section">
+                        <h4>{{ source_name.replace('_', ' ').title() }}</h4>
+                        <table class="data-table">
+                            {% for key, value in source_data.items() %}
+                            {% if key != 'source' %}
+                            <tr>
+                                <th>{{ key.replace('_', ' ').title() }}</th>
+                                <td>
+                                    {% if value is mapping %}
+                                        <ul class="compact-list">
+                                        {% for k, v in value.items() %}
+                                            <li><strong>{{ k }}:</strong> {{ v }}</li>
+                                        {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        {{ value }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </table>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Raw JSON -->
+            <div class="info-card">
+                <h3>📋 Raw JSON Data</h3>
+                <details>
+                    <summary>Click to expand</summary>
+                    <pre class="json-display">{{ data | tojson(indent=2) }}</pre>
+                </details>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
