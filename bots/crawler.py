@@ -121,8 +121,7 @@ class WebsiteCrawler:
         ]
 
         text_lower = text.lower()
-        found_terms = [
-            term for term in business_keywords if term in text_lower]
+        found_terms = [term for term in business_keywords if term in text_lower]
 
         return list(set(found_terms))
 

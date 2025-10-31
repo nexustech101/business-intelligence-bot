@@ -29,7 +29,8 @@ SOURCE_TEMPLATES = {
     'crunchbase': 'https://www.crunchbase.com/organization/{company_slug}',
     'wikipedia': 'https://en.wikipedia.org/wiki/{company_name}',
     'sec': 'https://www.sec.gov/cgi-bin/browse-edgar?company={company_name}',
-    'builtwith': 'https://builtwith.com/{domain}'
+    'builtwith': 'https://builtwith.com/{domain}',
+    'import_yetti': 'https://www.importyeti.com/company/{company_name}'
 }
 
 # Flask settings

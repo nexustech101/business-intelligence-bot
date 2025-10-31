@@ -230,6 +230,55 @@ class CompanyInfoAggregator:
         except Exception as e:
             logger.error(f"Error in generic extraction: {e}")
             return data
+        
+    def _extract_importyeti_data(self, soup, text):
+        """Extract data from ImportYeti"""
+        data = {'source': 'importyeti'}
+
+        try:
+            # Company description / overview
+            desc_elem = soup.find('div', {'class': 'company-overview'})
+            if desc_elem:
+                data['description'] = desc_elem.get_text(strip=True)[:500]
+
+            # Extract top suppliers / customers if present
+            suppliers = []
+            suppliers_table = soup.find('table', {'id': 'suppliers_table'})
+            if suppliers_table:
+                rows = suppliers_table.find_all('tr')[1:]  # skip header
+                for row in rows:
+                    cols = row.find_all('td')
+                    if len(cols) >= 2:
+                        suppliers.append({
+                            'name': cols[0].get_text(strip=True),
+                            'country': cols[1].get_text(strip=True)
+                        })
+            if suppliers:
+                data['suppliers'] = suppliers
+
+            # Extract total transactions or shipment stats from text
+            transactions_match = re.search(
+                r'Total Transactions[:\s]+([0-9,]+)', text, re.IGNORECASE)
+            if transactions_match:
+                data['total_transactions'] = transactions_match.group(1)
+
+            # Extract number of countries / products if available
+            countries_match = re.search(
+                r'Countries[:\s]+([0-9]+)', text, re.IGNORECASE)
+            if countries_match:
+                data['countries'] = countries_match.group(1)
+
+            products_match = re.search(
+                r'Products[:\s]+([0-9]+)', text, re.IGNORECASE)
+            if products_match:
+                data['products'] = products_match.group(1)
+
+            return data
+
+        except Exception as e:
+            logger.error(f"Error extracting ImportYeti data: {e}")
+            return data
+
 
     def aggregate_from_urls(self, urls):
         """Aggregate data from multiple URLs"""
@@ -247,6 +296,8 @@ class CompanyInfoAggregator:
                 source_name = 'sec'
             elif 'builtwith.com' in url:
                 source_name = 'builtwith'
+            elif 'importyetti.com' in url:
+                source_name = 'import_yetti'
 
             soup, text = self._fetch_url(url, source_name)
 
@@ -260,6 +311,8 @@ class CompanyInfoAggregator:
                 extracted = self._extract_yahoo_finance_data(soup, text)
             elif source_name == 'crunchbase':
                 extracted = self._extract_crunchbase_data(soup, text)
+            elif source_name == 'import_yetti':
+                extracted = self._extract_importyeti_data(soup, text)
             else:
                 extracted = self._extract_generic_data(soup, text, source_name)
 
@@ -314,6 +367,7 @@ def aggregate_company_info(company_name, urls=None):
             f"https://finance.yahoo.com/quote/{company_name.upper()}",
             f"https://www.crunchbase.com/organization/{company_slug}",
             f"https://en.wikipedia.org/wiki/{quote(company_name)}",
+            f"https://www.importyeti.com/company/{company_name}"
         ]
 
     data = aggregator.aggregate_from_urls(urls)
