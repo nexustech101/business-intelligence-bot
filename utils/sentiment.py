@@ -6,9 +6,9 @@ from typing import Union, List, Dict
 
 BASE_URL = "http://127.0.0.1:8000/v1/api/sentiment"
 
-
+# Useful if we want alternative decision making
 def get_top_k_sentiments(
-    sentiments: List[Dict[str,float]], /, 
+    sentiments: List[Dict[str,float]], /, *,
     k: int=3
 ) -> List[Dict[str,float]]:
     """
@@ -18,6 +18,7 @@ def get_top_k_sentiments(
     return sorted(sentiments, key=lambda x: x.get("confidence"), reverse=True)[:k]
 
 
+# Calls text classification (zero-shot-classifier) api defined in C:\Python\sentiment-anlaysis
 def get_sentiment(
     text: Union[str, List[str]],
     label_group: str = None
@@ -48,7 +49,8 @@ def get_sentiment(
     except req.exceptions.RequestException as e:
         raise SystemExit(f"❌ Request failed: {e}")
     
-    
+
+# I'm testing a new feature to send notifications to user when tasks are finished
 def show_notification(title: str, message: str, timeout: int = 15) -> None:
     """Display a desktop notification."""
     notification.notify(
@@ -56,9 +58,13 @@ def show_notification(title: str, message: str, timeout: int = 15) -> None:
         message=message,
         timeout=timeout
     )
+    
+    
+# @TODO: build factory methods for making decisions based on predicted classes/sentiments
 
 
 if __name__ == "__main__":
+    """Test new features"""
     result = get_sentiment("I'm going to teach a lesson on Python best practices.")
     sentiments = result[0]["sentiments"]
 

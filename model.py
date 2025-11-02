@@ -7,7 +7,6 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 
-
 file_path = r"C:\datasets\cleaned_emails.csv"
 
 file_path = r"C:\datasets\cleaned_emails.csv" 
@@ -25,6 +24,8 @@ if os.path.exists(file_path):
 else:
     print(f"❌ File not found: {file_path}")
     
+    
+# @TODO: Build LSTM sentiment analysis model to label and classify text collected from bots
 class DiscordDataset(Dataset):
     def __init__(self, texts, labels, vocab, tokenizer, label_map):
         self.texts = texts
@@ -81,7 +82,7 @@ class SentimentAnalysisLSTM(nn.Module):
         return self.fc(hidden)
     
 
-def predict_sentiment(model, text, tokenizer, vocab, device, max_length=100):
+def predict_sentiment(model, text, tokenizer, vocab, device, max_length=100) -> ...:
     """
     Given a text string, return the next sequence of tokens
     """
