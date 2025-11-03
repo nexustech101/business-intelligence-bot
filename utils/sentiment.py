@@ -4,6 +4,8 @@ import time
 from plyer import notification
 from typing import Union, List, Dict
 
+# @TODO: integrate microservice apis in ./apis/*
+
 BASE_URL = "http://127.0.0.1:8000/v1/api/sentiment"
 
 # Useful if we want alternative decision making
